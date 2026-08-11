@@ -4,7 +4,7 @@ import base64
 import os
 import re
 import streamlit as st
-from i18n import ui, SUBJECTS
+from i18n import ui, SUBJECTS, TOPIC_EXAMPLES
 from prompts import (
     build_lesson_plan_prompt,
     build_exercises_prompt,
@@ -247,6 +247,8 @@ DEFAULTS = {
     "test": "",
     "quality_results": {},
     "generated": False,
+    "topic_input": "",
+    "applied_example": "",
 }
 
 for key, val in DEFAULTS.items():
@@ -294,6 +296,17 @@ st.markdown(
     f'<p class="subtitle">{ui("app_subtitle", L)}</p>', unsafe_allow_html=True
 )
 
+selected_example = st.selectbox(
+    ui("example_topic_label", L),
+    options=[""] + TOPIC_EXAMPLES[L],
+    format_func=lambda value: value or ui("example_topic_none", L),
+    key=f"example_topic_{L}",
+)
+example_id = f"{L}:{selected_example}"
+if selected_example and st.session_state["applied_example"] != example_id:
+    st.session_state["topic_input"] = selected_example
+    st.session_state["applied_example"] = example_id
+
 # ── Input form ───────────────────────────────────────────────────────────────
 
 with st.form("lesson_form"):
@@ -307,6 +320,7 @@ with st.form("lesson_form"):
         topic = st.text_input(
             ui("topic_label", L),
             placeholder=ui("topic_placeholder", L),
+            key="topic_input",
         )
 
     with col2:
