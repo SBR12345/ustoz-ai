@@ -256,10 +256,10 @@ for key, val in DEFAULTS.items():
 # ── Sidebar ──────────────────────────────────────────────────────────────────
 
 with st.sidebar:
-    logo_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "ustoz-logo.png",
-    )
+    app_dir = os.path.dirname(os.path.abspath(__file__))
+    logo_path = os.path.join(app_dir, "assets", "ustoz-logo.png")
+    if not os.path.exists(logo_path):
+        logo_path = os.path.join(os.path.dirname(app_dir), "ustoz-logo.png")
     if os.path.exists(logo_path):
         st.image(logo_path, width=180)
 
