@@ -4,7 +4,14 @@ import base64
 import os
 import re
 import streamlit as st
-from i18n import ui, SUBJECTS, TOPIC_EXAMPLES
+from i18n import ui, SUBJECTS
+from lesson_examples import (
+    SUBJECT_IDS,
+    SECTIONS,
+    filter_topics,
+    quick_setting_options,
+    random_topic,
+)
 from prompts import (
     build_lesson_plan_prompt,
     build_exercises_prompt,
@@ -248,7 +255,13 @@ DEFAULTS = {
     "quality_results": {},
     "generated": False,
     "topic_input": "",
-    "applied_example": "",
+    "additional_input": "",
+    "topic_limit": 8,
+    "recent_topics": [],
+    "favorite_topics": [],
+    "quick_setting_ids": [],
+    "last_quick_signature": "",
+    "last_quick_text": "",
 }
 
 for key, val in DEFAULTS.items():
@@ -296,52 +309,148 @@ st.markdown(
     f'<p class="subtitle">{ui("app_subtitle", L)}</p>', unsafe_allow_html=True
 )
 
-selected_example = st.selectbox(
-    ui("example_topic_label", L),
-    options=[""] + TOPIC_EXAMPLES[L],
-    format_func=lambda value: value or ui("example_topic_none", L),
-    key=f"example_topic_{L}",
+selector_col1, selector_col2 = st.columns(2)
+with selector_col1:
+    subject_id = st.selectbox(
+        ui("subject_label", L),
+        options=SUBJECT_IDS,
+        format_func=lambda value: SUBJECTS[L][SUBJECT_IDS.index(value)],
+        key="subject_id",
+    )
+with selector_col2:
+    grade = st.selectbox(
+        ui("grade_label", L),
+        options=list(range(1, 12)),
+        format_func=lambda value: f"{value}{ui('grade_suffix', L)}",
+        index=3,
+        key="grade_select",
+    )
+    output_lang = st.selectbox(
+        ui("output_language_label", L),
+        options=["ru", "uz", "en"],
+        format_func=lambda value: ui(f"output_lang_{value}", L),
+        key="output_lang_select",
+    )
+
+subject = SUBJECTS[output_lang][SUBJECT_IDS.index(subject_id)]
+st.markdown(f"### {ui('examples_title', L)}")
+filter_col1, filter_col2, filter_col3 = st.columns([2, 1, 1])
+with filter_col1:
+    topic_search = st.text_input(ui("topic_search", L), key="topic_search")
+with filter_col2:
+    section_options = [""] + SECTIONS[output_lang]
+    topic_section = st.selectbox(
+        ui("topic_section", L),
+        section_options,
+        format_func=lambda value: value or ui("all_sections", L),
+        key="topic_section_filter",
+    )
+with filter_col3:
+    st.markdown("<div style='height: 28px'></div>", unsafe_allow_html=True)
+    if st.button(ui("suggest_topic", L), use_container_width=True):
+        suggestion = random_topic(subject_id, grade, output_lang)
+        if suggestion:
+            st.session_state["topic_input"] = suggestion["text"]
+            recent = st.session_state["recent_topics"]
+            st.session_state["recent_topics"] = [suggestion["text"]] + [
+                item for item in recent if item != suggestion["text"]
+            ][:4]
+            st.rerun()
+
+matching_topics = filter_topics(
+    subject_id, grade, output_lang, topic_search, topic_section
 )
-example_id = f"{L}:{selected_example}"
-if selected_example and st.session_state["applied_example"] != example_id:
-    st.session_state["topic_input"] = selected_example
-    st.session_state["applied_example"] = example_id
+visible_topics = matching_topics[: st.session_state["topic_limit"]]
+if not visible_topics:
+    st.info(ui("no_topics", L))
+else:
+    for item in visible_topics:
+        topic_col, favorite_col = st.columns([9, 1])
+        with topic_col:
+            if st.button(item["text"], key=f"pick_{item['id']}", use_container_width=True):
+                st.session_state["topic_input"] = item["text"]
+                recent = st.session_state["recent_topics"]
+                st.session_state["recent_topics"] = [item["text"]] + [
+                    value for value in recent if value != item["text"]
+                ][:4]
+                st.rerun()
+        with favorite_col:
+            is_favorite = item["text"] in st.session_state["favorite_topics"]
+            if st.button(
+                "★" if is_favorite else "☆",
+                key=f"favorite_{item['id']}",
+                help=ui("favorite_remove" if is_favorite else "favorite_add", L),
+                use_container_width=True,
+            ):
+                favorites = st.session_state["favorite_topics"]
+                if is_favorite:
+                    favorites = [value for value in favorites if value != item["text"]]
+                else:
+                    favorites = [item["text"]] + favorites
+                st.session_state["favorite_topics"] = favorites[:20]
+                st.rerun()
+
+if len(matching_topics) > st.session_state["topic_limit"]:
+    if st.button(ui("show_more", L), use_container_width=True):
+        st.session_state["topic_limit"] += 8
+        st.rerun()
+
+history_col, favorites_col = st.columns(2)
+with history_col:
+    if st.session_state["recent_topics"]:
+        with st.expander(ui("recent_topics", L)):
+            for index, value in enumerate(st.session_state["recent_topics"]):
+                if st.button(value, key=f"recent_{index}", use_container_width=True):
+                    st.session_state["topic_input"] = value
+                    st.rerun()
+with favorites_col:
+    if st.session_state["favorite_topics"]:
+        with st.expander(ui("favorite_topics", L)):
+            for index, value in enumerate(st.session_state["favorite_topics"]):
+                if st.button(value, key=f"saved_{index}", use_container_width=True):
+                    st.session_state["topic_input"] = value
+                    st.rerun()
+
+st.markdown(f"### {ui('quick_settings_title', L)}")
+st.caption(ui("quick_settings_help", L))
+setting_pairs = quick_setting_options(output_lang)
+setting_labels = dict(setting_pairs)
+selected_setting_ids = st.multiselect(
+    ui("quick_settings_title", L),
+    options=[setting_id for setting_id, _ in setting_pairs],
+    format_func=lambda setting_id: setting_labels[setting_id],
+    key="quick_setting_ids",
+    label_visibility="collapsed",
+)
+quick_signature = "|".join(selected_setting_ids) + f":{output_lang}"
+quick_text = "; ".join(setting_labels[setting_id] for setting_id in selected_setting_ids)
+if quick_signature != st.session_state["last_quick_signature"]:
+    current_text = st.session_state["additional_input"].strip()
+    previous_text = st.session_state["last_quick_text"].strip()
+    if previous_text and previous_text in current_text:
+        current_text = current_text.replace(previous_text, quick_text).strip("; ")
+    elif quick_text and not current_text:
+        current_text = quick_text
+    elif quick_text and quick_text not in current_text:
+        current_text = f"{current_text}; {quick_text}".strip("; ")
+    st.session_state["additional_input"] = current_text
+    st.session_state["last_quick_signature"] = quick_signature
+    st.session_state["last_quick_text"] = quick_text
 
 # ── Input form ───────────────────────────────────────────────────────────────
 
 with st.form("lesson_form"):
-    col1, col2 = st.columns(2)
-
-    with col1:
-        subject = st.selectbox(
-            ui("subject_label", L),
-            options=SUBJECTS[L],
-        )
-        topic = st.text_input(
-            ui("topic_label", L),
-            placeholder=ui("topic_placeholder", L),
-            key="topic_input",
-        )
-
-    with col2:
-        grade = st.selectbox(
-            ui("grade_label", L),
-            options=list(range(1, 12)),
-            format_func=lambda x: f"{x}{ui('grade_suffix', L)}",
-            index=3,
-        )
-        output_lang = st.selectbox(
-            ui("output_language_label", L),
-            options=["ru", "uz", "en"],
-            format_func=lambda x: (
-                ui(f"output_lang_{x}", L)
-            ),
-        )
+    topic = st.text_input(
+        ui("topic_label", L),
+        placeholder=ui("topic_placeholder", L),
+        key="topic_input",
+    )
 
     additional = st.text_area(
         ui("additional_instructions_label", L),
         placeholder=ui("additional_instructions_placeholder", L),
         height=68,
+        key="additional_input",
     )
 
     st.markdown('<div class="generate-btn">', unsafe_allow_html=True)
