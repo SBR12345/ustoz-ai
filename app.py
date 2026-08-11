@@ -265,9 +265,13 @@ with st.sidebar:
 
     lang = st.selectbox(
         ui("language_label", st.session_state["lang"]),
-        options=["ru", "uz"],
-        format_func=lambda x: "Русский" if x == "ru" else "O'zbekcha",
-        index=0 if st.session_state["lang"] == "ru" else 1,
+        options=["ru", "uz", "en"],
+        format_func=lambda x: {
+            "ru": "Русский",
+            "uz": "O'zbekcha",
+            "en": "English",
+        }[x],
+        index={"ru": 0, "uz": 1, "en": 2}.get(st.session_state["lang"], 0),
         key="lang_select",
     )
     st.session_state["lang"] = lang

@@ -1,4 +1,4 @@
-"""Bilingual UI strings for Ustoz.AI (Russian / Uzbek)."""
+"""Trilingual UI strings for Ustoz.AI (Russian / Uzbek / English)."""
 
 from dataclasses import dataclass
 
@@ -77,6 +77,43 @@ UI = {
         "additional_instructions_label": "Qo'shimcha ko'rsatmalar (ixtiyoriy)",
         "additional_instructions_placeholder": "Masalan: amaliyotga urg'u, juftlikda ishlash...",
     },
+    "en": {
+        "app_title": "Ustoz.AI — AI Teaching Assistant",
+        "app_subtitle": "Create classroom-ready materials in minutes",
+        "language_label": "Interface language",
+        "subject_label": "Subject",
+        "grade_label": "Grade",
+        "topic_label": "Lesson topic",
+        "topic_placeholder": "For example: Photosynthesis, Quadratic equations...",
+        "output_language_label": "Materials language",
+        "generate_button": "✦ Create materials",
+        "generating": "Creating materials...",
+        "lesson_plan_tab": "Lesson plan",
+        "exercises_tab": "Assignments",
+        "test_tab": "Test with answers",
+        "quality_title": "Quality assessment",
+        "quality_curriculum": "Curriculum alignment",
+        "quality_difficulty": "Difficulty level",
+        "quality_clarity": "Clarity",
+        "checking_quality": "Checking quality...",
+        "copy_button": "Copy",
+        "copied": "Copied!",
+        "clear_button": "Clear",
+        "error_no_topic": "Please enter a lesson topic.",
+        "error_no_api_key": "Enter your Groq API key in the sidebar.",
+        "api_key_label": "Groq API key",
+        "api_key_help": "Get a free key at console.groq.com/keys",
+        "sidebar_settings": "Settings",
+        "grade_suffix": " grade",
+        "output_lang_uz": "Uzbek",
+        "output_lang_ru": "Russian",
+        "output_lang_en": "English",
+        "quality_pass": "Pass",
+        "quality_warn": "Partial",
+        "quality_fail": "Needs improvement",
+        "additional_instructions_label": "Additional instructions (optional)",
+        "additional_instructions_placeholder": "For example: emphasize practice, include pair work...",
+    },
 }
 
 SUBJECTS = {
@@ -121,6 +158,27 @@ SUBJECTS = {
         "Texnologiya",
         "Jismoniy tarbiya",
         "Ona tili",
+    ],
+    "en": [
+        "Mathematics",
+        "Algebra",
+        "Geometry",
+        "Physics",
+        "Chemistry",
+        "Biology",
+        "Geography",
+        "History",
+        "Uzbek Language",
+        "Russian Language",
+        "English Language",
+        "Literature",
+        "Computer Science",
+        "Natural Science",
+        "Music",
+        "Visual Arts",
+        "Technology",
+        "Physical Education",
+        "Native Language",
     ],
 }
 
